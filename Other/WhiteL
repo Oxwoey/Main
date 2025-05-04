@@ -1,0 +1,107 @@
+local KeySystem = {}
+local orion = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+local keylink = "https://raw.githubusercontent.com/Jeffepicy/key/refs/heads/main/keyyyyyy"
+
+function KeySystem:Initialize(callback)
+    local Window = orion:MakeWindow({
+        Name = "Key System",
+        HidePremium = false,
+        SaveConfig = false,
+        ConfigFolder = "KeySystemConfig"
+    })
+
+    local KeySystemTab = Window:MakeTab({
+        Name = "Key",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+    local DiscordTab = Window:MakeTab({
+        Name = "Discord",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+
+    if not isfolder("KeySystem") then
+        makefolder("KeySystem")
+    end
+    if not isfile("KeySystem/key.txt") then
+        writefile("KeySystem/key.txt", "")
+    end
+
+    local savedKey = readfile("KeySystem/key.txt")
+    local inputKey = savedKey
+
+    local success, correctKey = pcall(function()
+        return game:HttpGet(keylink)
+    end)
+    if not success or typeof(correctKey) ~= "string" then
+        correctKey = nil
+    end
+
+    local function performCheck(keyToCheck)
+        if not correctKey then
+            orion:MakeNotification({
+                Name = "Key System",
+                Content = "try again",
+                Duration = 5,
+                Image = "rbxassetid://4483345998"
+            })
+            callback(false)
+            return
+        end
+
+        if keyToCheck == correctKey then
+            writefile("KeySystem/key.txt", keyToCheck)
+            orion:MakeNotification({
+                Name = "Key System",
+                Content ="key accepted",
+                Duration = 3,
+                Image = "rbxassetid://4483345998"
+            })
+            callback(true)
+        else
+            orion:MakeNotification({
+                Name = "Key System",
+                Content = "wrong key",
+                Duration = 3,
+                Image = "rbxassetid://4483345998"
+            })
+            callback(false)
+        end
+    end
+
+    KeySystemTab:AddTextbox({
+        Name = "Enter Key",
+        Default = inputKey,
+        TextDisappear = false,
+        Callback = function(value)
+            inputKey = value
+        end
+    })
+
+    KeySystemTab:AddButton({
+        Name = "Check Key",
+        Callback = function()
+            performCheck(inputKey)
+        end
+    })
+
+    if savedKey and savedKey ~= "" then
+        performCheck(savedKey)
+    end
+
+    DiscordTab:AddButton({
+        Name = "Copy Invite",
+        Callback = function()
+            setclipboard("porno.hub")
+            orion:MakeNotification({
+                Name = "Discord",
+                Content = "idk",
+                Duration = 3,
+                Image = "rbxassetid://4483345998"
+            })
+        end
+    })
+end
+
+return KeySystem
