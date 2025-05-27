@@ -5,6 +5,11 @@ return {
 		Full = "7c09b540050666a86b602735ec0b49ed",
 	},
 	{
+		NameHash = "8d25be6b8db3e3a60c3cd93a3d5216de",
+		IdHash = "e1044c0468d194e760227a4e953d32d1",
+		Full = "06623bf31ec7bbd4fe37bab414387330",
+	},
+	{
 		NameHash = "810a490bdc1aaa337fb93e3660031c8e",
 		IdHash = "e20cb8b7f62de6cec805c3e3cad3afae",
 		Full = "9287dc04f4b300226fe2870916813373",
