@@ -5,9 +5,9 @@ return {
 		Full = "443b07d646d9f65b45d565e999805d86",
 	},
 	{
-		NameHash = "",
-		IdHash = "",
-		Full = "",
+		NameHash = "2f372dab8af34f83a172cf5f12cc9bd1",
+		IdHash = "279c01471d05e032aa463c53eda58da1",
+		Full = "70b02a8a17769f97996bfa08edbf00d6",
 	},
 	{
 		NameHash = "",
