@@ -15,9 +15,9 @@ return {
 		Full = "a8f579df8bf34ae9e9fc9b62b98b1b66",
 	},
 	{
-		NameHash = "",
-		IdHash = "",
-		Full = "",
+		NameHash = "cbb1a0e3e77deb926b1878fe747facd8",
+		IdHash = "f7a18d7b1c3ffb1adb060703489e847a",
+		Full = "2ef36c5f9c5c69cfd39d12fe31505a50",
 	},
 	{
 		NameHash = "",
