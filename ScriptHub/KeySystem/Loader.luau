@@ -20,9 +20,9 @@ return {
 		Full = "2ef36c5f9c5c69cfd39d12fe31505a50",
 	},
 	{
-		NameHash = "",
-		IdHash = "",
-		Full = "",
+		NameHash = "626a796083d39c8b55830d72cc01e1a0",
+		IdHash = "faf272136ba2c207b71931d88d70bf2e",
+		Full = "053c0815fb9b53aebbfd1882b5c9f0a8",
 	},
 	{
 		NameHash = "",
