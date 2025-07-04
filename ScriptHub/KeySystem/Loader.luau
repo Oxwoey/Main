@@ -1,8 +1,8 @@
 return {
 	{
-		NameHash = "626a796083d39c8b55830d72cc01e1a0",
-		IdHash = "faf272136ba2c207b71931d88d70bf2e",
-		Full = "053c0815fb9b53aebbfd1882b5c9f0a8",
+		NameHash = "02f4c12c619431afbd92de3057d0be8d",
+		IdHash = "a1ece5c865a956a992d0a26624aab9e1",
+		Full = "e9546c767047052ecf78ada9d7ad5a09",
 	},
 	{
 		NameHash = "2f372dab8af34f83a172cf5f12cc9bd1",
