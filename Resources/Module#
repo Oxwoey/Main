@@ -1,0 +1,201 @@
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+local ESPManager = {}
+ESPManager.__index = ESPManager
+
+function ESPManager.new()
+    local self = setmetatable({}, ESPManager)
+    
+    self.localPlayer = Players.LocalPlayer
+    self.espEnabled = true
+    self.highlightColor = Color3.fromRGB(255, 255, 255)
+    self.outlineColor = Color3.fromRGB(255, 255, 255)
+    self.highlights = {}
+    self.connections = {}
+    
+    self:initialize()
+    return self
+end
+
+function ESPManager:createHighlight(part)
+    if self.highlights[part] then
+        return
+    end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "PlayerDetectorESP"
+    highlight.Adornee = part
+    highlight.FillColor = self.highlightColor
+    highlight.OutlineColor = self.outlineColor
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = part
+    
+    self.highlights[part] = highlight
+end
+
+function ESPManager:removeHighlight(part)
+    if self.highlights[part] then
+        self.highlights[part]:Destroy()
+        self.highlights[part] = nil
+    end
+end
+
+function ESPManager:updateESP(part)
+    local shouldHighlight = part:GetAttribute("ESP") == true or self.espEnabled
+    
+    if shouldHighlight and not self.highlights[part] then
+        self:createHighlight(part)
+    elseif not shouldHighlight and self.highlights[part] then
+        self:removeHighlight(part)
+    end
+end
+
+function ESPManager:findAllDetectors()
+    local detectors = {}
+    
+    local function searchInContainer(container)
+        for _, child in pairs(container:GetChildren()) do
+            if child.Name == "PlayerCharacterLocationDetector" and child:IsA("BasePart") then
+                table.insert(detectors, child)
+            end
+            searchInContainer(child)
+        end
+    end
+    
+    searchInContainer(Workspace)
+    return detectors
+end
+
+function ESPManager:setupDetector(detector)
+    if detector:GetAttribute("ESP") == nil then
+        detector:SetAttribute("ESP", true)
+    end
+    
+    self:updateESP(detector)
+    
+    local connection = detector.AttributeChanged:Connect(function(attributeName)
+        if attributeName == "ESP" then
+            self:updateESP(detector)
+        end
+    end)
+    
+    self.connections[detector] = connection
+end
+
+function ESPManager:onChildAdded(child)
+    if child.Name == "PlayerCharacterLocationDetector" and child:IsA("BasePart") then
+        task.wait(0.1)
+        self:setupDetector(child)
+    end
+end
+
+function ESPManager:onChildRemoved(child)
+    if self.highlights[child] then
+        self.highlights[child]:Destroy()
+        self.highlights[child] = nil
+    end
+    
+    if self.connections[child] then
+        self.connections[child]:Disconnect()
+        self.connections[child] = nil
+    end
+end
+
+function ESPManager:setupHandlers(container)
+    container.ChildAdded:Connect(function(child)
+        self:onChildAdded(child)
+    end)
+    
+    container.ChildRemoved:Connect(function(child)
+        self:onChildRemoved(child)
+    end)
+    
+    for _, child in pairs(container:GetChildren()) do
+        if not child:IsA("BasePart") then
+            self:setupHandlers(child)
+        end
+    end
+end
+
+function ESPManager:initialize()
+    local detectors = self:findAllDetectors()
+    
+    for _, detector in pairs(detectors) do
+        self:setupDetector(detector)
+    end
+    
+    self:setupHandlers(Workspace)
+end
+
+function ESPManager:enableAll()
+    for detector, _ in pairs(self.highlights) do
+        if detector.Parent then
+            detector:SetAttribute("ESP", true)
+        end
+    end
+    self.espEnabled = true
+end
+
+function ESPManager:disableAll()
+    for detector, _ in pairs(self.highlights) do
+        if detector.Parent then
+            detector:SetAttribute("ESP", false)
+        end
+    end
+    self.espEnabled = false
+end
+
+function ESPManager:refresh()
+    local detectors = self:findAllDetectors()
+    for _, detector in pairs(detectors) do
+        if not self.connections[detector] then
+            self:setupDetector(detector)
+        end
+    end
+end
+
+function ESPManager:cleanup()
+    for part, highlight in pairs(self.highlights) do
+        highlight:Destroy()
+    end
+    self.highlights = {}
+    
+    for part, connection in pairs(self.connections) do
+        connection:Disconnect()
+    end
+    self.connections = {}
+end
+
+function ESPManager:destroy()
+    self:cleanup()
+    self = nil
+end
+
+-- Инициализация
+if not getgenv().PlayerDetectorESP then
+    getgenv().PlayerDetectorESP = ESPManager.new()
+end
+
+-- Глобальные функции управления
+getgenv().ESP_FUNCTIONS = {
+    toggle = function(value)
+        getgenv().PlayerDetectorESP:toggle(value)
+    end,
+    
+    refresh = function()
+        getgenv().PlayerDetectorESP:refresh()
+    end,
+    
+    cleanup = function()
+        getgenv().PlayerDetectorESP:cleanup()
+    end,
+    
+    destroy = function()
+        getgenv().PlayerDetectorESP:destroy()
+        getgenv().PlayerDetectorESP = nil
+        getgenv().ESP_FUNCTIONS = nil
+    end
+}
