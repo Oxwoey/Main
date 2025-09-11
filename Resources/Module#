@@ -174,12 +174,10 @@ function ESPManager:destroy()
     self = nil
 end
 
--- Инициализация
 if not getgenv().PlayerDetectorESP then
     getgenv().PlayerDetectorESP = ESPManager.new()
 end
 
--- Глобальные функции управления
 getgenv().ESP_FUNCTIONS = {
     toggle = function(value)
         getgenv().PlayerDetectorESP:toggle(value)
