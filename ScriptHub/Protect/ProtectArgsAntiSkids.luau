@@ -11,17 +11,21 @@ local _settings = {}
 
 local EncryptionSystem = {}
 
-function EncryptionSystem.xorEncrypt(text, key)
-    local result = {}
-    local keyLen = #key
-    
-    for i = 1, #text do
-        local textByte = string.byte(text, i)
-        local keyByte = string.byte(key, ((i - 1) % keyLen) + 1)
-        result[i] = string.char(bit32.bxor(textByte, keyByte))
+function EncryptionSystem.xorEncrypt(String, Key)
+    local KeyCodesMap, StringCodesMap = {}, {}
+    for _, Codepoint in utf8.codes(Key) do
+        table.insert(KeyCodesMap, Codepoint)
     end
-    
-    return table.concat(result)
+    for _, Codepoint in utf8.codes(String) do
+        table.insert(StringCodesMap, Codepoint)
+    end
+    local Result = ""
+    for Index, Codepoint in ipairs(StringCodesMap) do
+        local KeyIndex = ((Index - 1) % #KeyCodesMap) + 1
+        local XORResult = bit32.bxor(KeyCodesMap[KeyIndex], Codepoint)
+        Result = Result .. utf8.char(XORResult)
+    end
+    return Result
 end
 
 function EncryptionSystem.base64Encode(data)
@@ -69,7 +73,7 @@ function ProtectionModule:init(encryptionKey, settings)
     end
     
     if not encryptionKey or type(encryptionKey) ~= "string" then
-        error("ProtectionModule: Необходим ключ шифрования (строка)")
+        error("ProtectionModule: Encryption key required")
     end
     
     _encryptionKey = encryptionKey
@@ -85,7 +89,7 @@ end
 
 function ProtectionModule:_checkInit()
     if not _isInitialized then
-        error("ProtectionModule: Модуль не инициализирован! Вызовите :init() сначала")
+        error("ProtectionModule: Module not initialized")
     end
 end
 
@@ -93,11 +97,11 @@ function ProtectionModule.encrypt(originalRemote)
     ProtectionModule:_checkInit()
     
     if not originalRemote then
-        error("ProtectionModule: Передан nil RemoteEvent")
+        error("ProtectionModule: nil RemoteEvent passed")
     end
     
     if not originalRemote:IsA("RemoteEvent") and not originalRemote:IsA("RemoteFunction") then
-        error("ProtectionModule: Объект должен быть RemoteEvent или RemoteFunction")
+        error("ProtectionModule: object must be RemoteEvent or RemoteFunction")
     end
     
     local protectedRemote = {}
@@ -118,36 +122,6 @@ function ProtectionModule.encrypt(originalRemote)
             
             return originalRemote:FireServer(unpack(encryptedArgs))
         end
-        
-        function protectedRemote:FireClient(player, ...)
-            local args = {...}
-            local encryptedArgs = {}
-            
-            for i, arg in ipairs(args) do
-                encryptedArgs[i] = EncryptionSystem.encryptArgument(arg, _encryptionKey)
-            end
-            
-            if _settings.addTimestamp then
-                table.insert(encryptedArgs, EncryptionSystem.encryptArgument(tostring(tick()), _encryptionKey))
-            end
-            
-            return originalRemote:FireClient(player, unpack(encryptedArgs))
-        end
-        
-        function protectedRemote:FireAllClients(...)
-            local args = {...}
-            local encryptedArgs = {}
-            
-            for i, arg in ipairs(args) do
-                encryptedArgs[i] = EncryptionSystem.encryptArgument(arg, _encryptionKey)
-            end
-            
-            if _settings.addTimestamp then
-                table.insert(encryptedArgs, EncryptionSystem.encryptArgument(tostring(tick()), _encryptionKey))
-            end
-            
-            return originalRemote:FireAllClients(unpack(encryptedArgs))
-        end
     end
     
     if remoteType == "Function" then
@@ -165,21 +139,6 @@ function ProtectionModule.encrypt(originalRemote)
             
             return originalRemote:InvokeServer(unpack(encryptedArgs))
         end
-        
-        function protectedRemote:InvokeClient(player, ...)
-            local args = {...}
-            local encryptedArgs = {}
-            
-            for i, arg in ipairs(args) do
-                encryptedArgs[i] = EncryptionSystem.encryptArgument(arg, _encryptionKey)
-            end
-            
-            if _settings.addTimestamp then
-                table.insert(encryptedArgs, EncryptionSystem.encryptArgument(tostring(tick()), _encryptionKey))
-            end
-            
-            return originalRemote:InvokeClient(player, unpack(encryptedArgs))
-        end
     end
     
     setmetatable(protectedRemote, {
@@ -193,7 +152,7 @@ function ProtectionModule.encrypt(originalRemote)
             originalRemote[k] = v
         end,
         __tostring = function()
-            return "ProtectedRemote(" .. tostring(originalRemote) .. ")"
+            return
         end
     })
     
@@ -211,14 +170,18 @@ end
 
 function ProtectionModule:updateSettings(newSettings)
     self:_checkInit()
+    if type(newSettings) ~= "table" then
+        error("ProtectionModule: Settings must be a table")
+    end
+    
     for key, value in pairs(newSettings) do
         _settings[key] = value
     end
 end
 
 function ProtectionModule.generateKey(length)
-    length = length or 16
-    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
+    length = length or 32
+    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?"
     local key = ""
     
     for i = 1, length do
