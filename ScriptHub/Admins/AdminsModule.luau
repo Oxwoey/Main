@@ -1,12 +1,9 @@
--- КОРОЧ РЕБЯТА ЗНАЮ САМ ТУТ ПОЛ ВЕЩЕЙ МОГУТ БЫТЬ БАГАННЫЕ Я ПОФИКШУ
--- JUST BETA
--- made by crysorune
-
 local AdminModule = {}
 AdminModule.__index = AdminModule
 
 local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local IsLoopKill = false
 
@@ -15,9 +12,15 @@ type CommandFunction = (Player, { Player }) -> ()
 
 local function sayString(str: string)
 	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-		TextChatService.TextChannels.RBXGeneral:SendAsync(str)
+		local textChannel = TextChatService:FindFirstChild("TextChannels")
+		if textChannel then
+			local general = textChannel:FindFirstChild("RBXGeneral")
+			if general then
+				general:SendAsync(str)
+			end
+		end
 	else
-		local sayEvent = game.ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+		local sayEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
 		if sayEvent and sayEvent:IsA("Folder") then
 			local sayMessageRequest = sayEvent:FindFirstChild("SayMessageRequest")
 			if sayMessageRequest and sayMessageRequest:IsA("RemoteEvent") then
@@ -80,11 +83,6 @@ function AdminModule:GetTargets(sender: Player, targetArg: string?): { Player }
 end
 
 function AdminModule:RegisterDefaultCommands()
-	self.Commands.AddTestCommans = function(sender: Player, targets: { Player })
-		-- мехинику пишите
-        print(sender.Name)
-	end
-
 	self.Commands.kick = function(sender: Player, targets: { Player })
 		for _, target in ipairs(targets) do
 			target:Kick("Kicked by " .. sender.Name)
@@ -92,7 +90,7 @@ function AdminModule:RegisterDefaultCommands()
 	end
 
 	self.Commands.reveal = function(sender: Player, _: { Player })
-		sayString("/w " .. sender.Name .. " I'm")
+		sayString("/w " .. sender.Name .. " I'm here")
 	end
 
 	self.Commands.bring = function(sender: Player, targets: { Player })
@@ -154,6 +152,30 @@ function AdminModule:RegisterDefaultCommands()
 end
 
 function AdminModule:HookPlayer(player: Player)
+	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+		local textChatCommand = Instance.new("TextChatCommand")
+		textChatCommand.PrimaryAlias = self.Prefix .. "cmd"
+		textChatCommand.Parent = TextChatService
+		
+		textChatCommand.Triggered:Connect(function(textSource, message)
+			local sourcePlayer = Players:GetPlayerByUserId(textSource.UserId)
+			if not sourcePlayer or not self:IsAdmin(sourcePlayer.UserId) then return end
+			
+			local fullMessage = message
+			if fullMessage:sub(1, 1) ~= self.Prefix then return end
+			
+			local args = fullMessage:sub(2):split(" ")
+			local cmd = args[1]:lower()
+			local targetArg = args[2]
+			local targets = self:GetTargets(sourcePlayer, targetArg)
+
+			local action = self.Commands[cmd]
+			if action then
+				action(sourcePlayer, targets)
+			end
+		end)
+	end
+	
 	player.Chatted:Connect(function(msg: string)
 		if not self:IsAdmin(player.UserId) then return end
 		if msg:sub(1, 1) ~= self.Prefix then return end
