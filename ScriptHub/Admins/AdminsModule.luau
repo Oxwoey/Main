@@ -151,31 +151,26 @@ function AdminModule:RegisterDefaultCommands()
 	end
 end
 
-function AdminModule:HookPlayer(player: Player)
-	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-		local textChatCommand = Instance.new("TextChatCommand")
-		textChatCommand.PrimaryAlias = self.Prefix .. "cmd"
-		textChatCommand.Parent = TextChatService
-		
-		textChatCommand.Triggered:Connect(function(textSource, message)
-			local sourcePlayer = Players:GetPlayerByUserId(textSource.UserId)
-			if not sourcePlayer or not self:IsAdmin(sourcePlayer.UserId) then return end
-			
-			local fullMessage = message
-			if fullMessage:sub(1, 1) ~= self.Prefix then return end
-			
-			local args = fullMessage:sub(2):split(" ")
-			local cmd = args[1]:lower()
-			local targetArg = args[2]
-			local targets = self:GetTargets(sourcePlayer, targetArg)
-
-			local action = self.Commands[cmd]
-			if action then
-				action(sourcePlayer, targets)
-			end
-		end)
+local function setupChatHook(self)
+	TextChatService.OnIncomingMessage = function(message)
+		local text = message.Text
+		local textSource = message.TextSource
+		if not textSource then return end
+		local sourcePlayer = Players:GetPlayerByUserId(textSource.UserId)
+		if not sourcePlayer or not self:IsAdmin(sourcePlayer.UserId) then return end
+		if text:sub(1, 1) ~= self.Prefix then return end
+		local args = text:sub(2):split(" ")
+		local cmd = args[1]:lower()
+		local targetArg = args[2]
+		local targets = self:GetTargets(sourcePlayer, targetArg)
+		local action = self.Commands[cmd]
+		if action then
+			action(sourcePlayer, targets)
+		end
 	end
-	
+end
+
+function AdminModule:HookPlayer(player: Player)
 	player.Chatted:Connect(function(msg: string)
 		if not self:IsAdmin(player.UserId) then return end
 		if msg:sub(1, 1) ~= self.Prefix then return end
@@ -195,13 +190,17 @@ end
 function AdminModule:Enable()
 	self:RegisterDefaultCommands()
 
-	for _, player in ipairs(Players:GetPlayers()) do
-		self:HookPlayer(player)
-	end
+	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+		setupChatHook(self)
+	else
+		for _, player in ipairs(Players:GetPlayers()) do
+			self:HookPlayer(player)
+		end
 
-	Players.PlayerAdded:Connect(function(player: Player)
-		self:HookPlayer(player)
-	end)
+		Players.PlayerAdded:Connect(function(player: Player)
+			self:HookPlayer(player)
+		end)
+	end
 end
 
 return AdminModule
